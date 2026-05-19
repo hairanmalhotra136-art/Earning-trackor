@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TrackTax Wallet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- PWA basics -->
+  <meta name="theme-color" content="#020617" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- iOS style -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TrackTax Wallet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #020617;
+      --card: #020617;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22c55e;
+      --accent-soft: rgba(34,197,94,0.12);
+      --danger: #b91c1c;
+      --nav-bg: #020617f0;
+      --radius-card: 18px;
+      --radius-input: 12px;
+      --shadow-card: 0 18px 40px rgba(0,0,0,0.45);
+    }
+
+    :root.light {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+      --nav-bg: #f9fafbf0;
+      --shadow-card: 0 14px 30px rgba(15,23,42,0.12);
+    }
+
+    :root.theme-green {
+      --accent: #22c55e;
+      --accent-soft: rgba(34,197,94,0.12);
+    }
+    :root.theme-blue {
+      --accent: #3b82f6;
+      --accent-soft: rgba(59,130,246,0.12);
+    }
+    :root.theme-purple {
+      --accent: #8b5cf6;
+      --accent-soft: rgba(139,92,246,0.12);
+    }
+    :root.theme-orange {
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.12);
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: radial-gradient(circle at top, #020617 0, var(--bg) 55%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding: 12px 12px calc(11vh + 24px);
+      padding-top: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 4px 0 12px;
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 0.03em;
+    }
+
+    h1 span.logo-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      margin-left: 4px;
+    }
+
+    h2 {
+      margin: 4px 0 8px;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .card {
+      background: linear-gradient(145deg, var(--card), #020617);
+      border-radius: var(--radius-card);
+      padding: 12px 12px 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(148,163,184,0.18);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    :root.light .card {
+      background: linear-gradient(145deg, #ffffff, #f9fafb);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(148,163,184,0.18), transparent 55%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    label {
+      font-size: 12px;
+      display: block;
+      margin-top: 6px;
+      margin-bottom: 2px;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: var(--radius-input);
+      border: 1px solid rgba(55,65,81,0.9);
+      background: rgba(15,23,42,0.96);
+      color: var(--text);
+      font-size: 14px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.08s ease;
+    }
+
+    :root.light input,
+    :root.light select,
+    :root.light textarea,
+    :root.light button {
+      background: #ffffff;
+      border-color: #d1d5db;
+      color: #111827;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+      background: rgba(15,23,42,0.98);
+    }
+
+    textarea { resize: vertical; }
+
+    button {
+      margin-top: 10px;
+      background: var(--accent);
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      color: #0b1120;
+      box-shadow: 0 10px 25px rgba(34,197,94,0.35);
+    }
+
+    :root.theme-blue button {
+      box-shadow: 0 10px 25px rgba(59,130,246,0.35);
+    }
+    :root.theme-purple button {
+      box-shadow: 0 10px 25px rgba(139,92,246,0.35);
+    }
+    :root.theme-orange button {
+      box-shadow: 0 10px 25px rgba(249,115,22,0.35);
+    }
+
+    button:active {
+      transform: scale(0.97);
+      box-shadow: none;
+    }
+
+    button.secondary {
+      background: rgba(15,23,42,0.96);
+      border: 1px solid rgba(148,163,184,0.6);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    :root.light button.secondary {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: #111827;
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: #fee2e2;
+      box-shadow: 0 10px 25px rgba(185,28,28,0.35);
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row > div { flex: 1; }
+
+    .small { font-size: 11px; color: var(--muted); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-right: 4px;
+      border: 1px solid rgba(148,163,184,0.5);
+      backdrop-filter: blur(6px);
+    }
+
+    .badge-income { background: rgba(34,197,94,0.12); color: #bbf7d0; }
+    .badge-expense { background: rgba(248,113,113,0.12); color: #fecaca; }
+    .badge-saving { background: rgba(56,189,248,0.12); color: #bae6fd; }
+
+    :root.light .badge-income { color: #166534; }
+    :root.light .badge-expense { color: #b91c1c; }
+    :root.light .badge-saving { color: #0369a1; }
+
+    .entry {
+      border-bottom: 1px solid rgba(15,23,42,0.7);
+      padding: 8px 0;
+      font-size: 13px;
+    }
+
+    :root.light .entry {
+      border-bottom-color: #e5e7eb;
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .entry-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .totals-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .totals-grid div {
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(31,41,55,0.9);
+    }
+
+    :root.light .totals-grid div {
+      background: #f9fafb;
+      border-color: #e5e7eb;
+    }
+
+    .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 11vh;
+      min-height: 80px;
+      max-height: 120px;
+      background: var(--nav-bg);
+      border-top: 1px solid rgba(15,23,42,0.9);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      z-index: 50;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    :root.light .nav {
+      border-top-color: #e5e7eb;
+    }
+
+    .nav-btn {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 0;
+      cursor: pointer;
+    }
+
+    .nav-btn span {
+      display: block;
+    }
+
+    .nav-icon {
+      width: 22px;
+      height: 22px;
+      margin: 0 auto 2px;
+      display: block;
+    }
+
+    .nav-btn.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-btn.active svg path {
+      stroke: var(--accent);
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    canvas {
+      width: 100% !important;
+      height: 220px !important;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .filter-row > div {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    @media (max-width: 600px) {
+      .row { flex-direction: column; }
+      .totals-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .no-print {}
+    .print-area {}
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .app {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .print-area {
+        padding: 8mm;
+      }
+      table {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app print-area">
+    <h1>TrackTax Wallet <span class="logo-dot"></span></h1>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="card">
+        <h2>Dashboard</h2>
+        <div class="filter-row">
+          <div>
+            <label for="dashRange">Range</label>
+            <select id="dashRange" onchange="onDashboardRangeChange()">
+              <option value="month">This month</option>
+              <option value="week">This week</option>
+              <option value="today">Today</option>
+              <option value="quarter">This quarter</option>
+              <option value="year">This year</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label for="dashFrom">From</label>
+            <input type="date" id="dashFrom" onchange="renderDashboard()">
+          </div>
+          <div>
+            <label for="dashTo">To</label>
+            <input type="date" id="dashTo" onchange="renderDashboard()">
+          </div>
+        </div>
+        <div class="totals-grid">
+          <div><b>Gross income:</b> <span id="dashIncome">€0.00</span></div>
+          <div><b>Net income:</b> <span id="dashNet">€0.00</span></div>
+          <div><b>Expenses:</b> <span id="dashExpense">€0.00</span></div>
+          <div><b>Savings:</b> <span id="dashSaving">€0.00</span></div>
+          <div><b>Total IVA:</b> <span id="dashIVA">€0.00</span></div>
+          <div><b>Total IRS:</b> <span id="dashIRS">€0.00</span></div>
+          <div><b>Total SS:</b> <span id="dashSS">€0.00</span></div>
+          <div><b>Other taxes:</b> <span id="dashOtherTax">€0.00</span></div>
+          <div><b>Wallet before saving:</b> <span id="dashWalletBefore">€0.00</span></div>
+          <div><b>Wallet after saving:</b> <span id="dashWalletAfter">€0.00</span></div>
+        </div>
+        <div class="small" id="dashDetail"></div>
+      </div>
+
+      <div class="card">
+        <h2>Tax breakdown</h2>
+        <canvas id="taxPie"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Income vs expenses</h2>
+        <canvas id="incomeBar"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Wallet over time</h2>
+        <canvas id="walletLine"></canvas>
+      </div>
+    </div>
+
+    <!-- GIGS -->
+    <div id="page-gigs" class="page">
+      <div class="card">
+        <h2>Add / Edit gig</h2>
+        <input type="hidden" id="gigEditId">
+        <label for="gigName">Gig name</label>
+        <input id="gigName" placeholder="Uber, Glovo, etc.">
+        <div class="small" style="margin-top:6px;">
+          Each tax:<br>
+          - <b>Included</b>: inside the amount you type, reduces your net.<br>
+          - <b>Excluded</b>: outside the amount, does NOT reduce your net (just shown).
+        </div>
+        <div id="gigTaxesContainer" class="small" style="margin-top:8px;"></div>
+        <button class="secondary" onclick="addGigTaxRow()">Add tax</button>
+        <button onclick="saveGig()">Save gig</button>
+        <button class="secondary" onclick="resetGigForm()">Clear form</button>
+      </div>
+
+      <div class="card">
+        <h2>Gigs</h2>
+        <div id="gigList"></div>
+      </div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div id="page-earnings" class="page">
+      <div class="card">
+        <h2>Add / Edit earning</h2>
+        <input type="hidden" id="earnEditId">
+        <label for="earnDate">Date</label>
+        <input type="date" id="earnDate">
+        <label for="earnGig">Gig</label>
+        <select id="earnGig"></select>
+        <label for="earnAmount">Amount (€)</label>
+        <input type="number" id="earnAmount" step="0.01">
+        <label for="earnNote">Note</label>
+        <textarea id="earnNote" rows="2"></textarea>
+        <button id="earnSaveBtn" onclick="saveEarning()">Save earning</button>
+        <button class="secondary" onclick="resetEarningForm()">Clear form</button>
+      </div>
+
+      <div class="card">
+        <h2>Earnings</h2>
+        <div class="filter-row">
+          <div>
+            <label for="earnFrom">From</label>
+            <input type="date" id="earnFrom" onchange="renderEarnings()">
+          </div>
+          <div>
+            <label for="earnTo">To</label>
+            <input type="date" id="earnTo" onchange="renderEarnings()">
+          </div>
+        </div>
+        <div id="earnList"></div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div id="page-expenses" class="page">
+      <div class="card">
+        <h2>Add / Edit expense</h2>
+        <input type="hidden" id="expEditId">
+        <label for="expDate">Date</label>
+        <input type="date" id="expDate">
+        <label for="expCat">Category</label>
+        <input id="expCat" placeholder="Fuel, Food, Rent, etc.">
+        <label for="expAmount">Amount (€)</label>
+        <input type="number" id="expAmount" step="0.01">
+        <label for="expNote">Note</label>
+        <textarea id="expNote" rows="2"></textarea>
+        <button id="expSaveBtn" onclick="saveExpense()">Save expense</button>
+        <button class="secondary" onclick="resetExpenseForm()">Clear form</button>
+      </div>
+
+      <div class="card">
+        <h2>Expenses</h2>
+        <div class="filter-row">
+          <div>
+            <label for="expFrom">From</label>
+            <input type="date" id="expFrom" onchange="renderExpenses()">
+          </div>
+          <div>
+            <label for="expTo">To</label>
+            <input type="date" id="expTo" onchange="renderExpenses()">
+          </div>
+        </div>
+        <div id="expList"></div>
+      </div>
+    </div>
+
+    <!-- SAVINGS -->
+    <div id="page-savings" class="page">
+      <div class="card">
+        <h2>Add / Edit saving</h2>
+        <input type="hidden" id="savEditId">
+        <label for="savDate">Date</label>
+        <input type="date" id="savDate">
+        <label for="savAmount">Amount moved to saving (€)</label>
+        <input type="number" id="savAmount" step="0.01">
+        <label for="savNote">Note / goal name</label>
+        <textarea id="savNote" rows="2" placeholder="Emergency fund, car, etc."></textarea>
+        <button id="savSaveBtn" onclick="saveSaving()">Save saving</button>
+        <button class="secondary" onclick="resetSavingForm()">Clear form</button>
+      </div>
+
+      <div class="card">
+        <h2>Savings</h2>
+        <div class="filter-row">
+          <div>
+            <label for="savFrom">From</label>
+            <input type="date" id="savFrom" onchange="renderSavings()">
+          </div>
+          <div>
+            <label for="savTo">To</label>
+            <input type="date" id="savTo" onchange="renderSavings()">
+          </div>
+        </div>
+        <div id="savList"></div>
+      </div>
+    </div>
+
+    <!-- LEDGER -->
+    <div id="page-ledger" class="page">
+      <div class="card">
+        <h2>Ledger & filters</h2>
+        <div class="filter-row">
+          <div>
+            <label for="ledFrom">From</label>
+            <input type="date" id="ledFrom" onchange="renderLedger()">
+          </div>
+          <div>
+            <label for="ledTo">To</label>
+            <input type="date" id="ledTo" onchange="renderLedger()">
+          </div>
+          <div>
+            <label for="ledType">Type</label>
+            <select id="ledType" onchange="renderLedger()">
+              <option value="">All</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+              <option value="saving">Saving</option>
+            </select>
+          </div>
+        </div>
+        <div id="ledgerList"></div>
+      </div>
+
+      <div class="card no-print">
+        <h2>Export</h2>
+        <button class="secondary" onclick="exportLedgerCSVFile()">Download Excel / CSV (detailed table)</button>
+        <button class="secondary" onclick="exportPDF()">Download PDF (summary + tables)</button>
+        <div class="small">
+          CSV opens in Excel/Sheets. PDF opens in any PDF viewer.
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="card">
+        <h2>Appearance</h2>
+        <label for="themeSelect">Theme</label>
+        <select id="themeSelect" onchange="changeTheme()">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+
+        <label for="colorSelect" style="margin-top:10px;">Accent color</label>
+        <select id="colorSelect" onchange="changeColorTheme()">
+          <option value="green">Green</option>
+          <option value="blue">Blue</option>
+          <option value="purple">Purple</option>
+          <option value="orange">Orange</option>
+        </select>
+
+        <div class="small" style="margin-top:6px;">
+          Theme and color are saved on device and restored on next open.
+        </div>
+      </div>
+
+      <div class="card no-print">
+        <h2>Backup & restore</h2>
+
+        <h3 style="margin:4px 0 4px;font-size:14px;">Full backup (all data)</h3>
+        <button class="secondary" onclick="exportBackupFullFile()">Download full backup (JSON)</button>
+        <div class="small">Contains all gigs, taxes, earnings, expenses, savings.</div>
+
+        <hr style="border-color:var(--border);margin:10px 0;">
+
+        <h3 style="margin:4px 0 4px;font-size:14px;">Range backup</h3>
+        <div class="filter-row">
+          <div>
+            <label for="backupRange">Range</label>
+            <select id="backupRange" onchange="onBackupRangeChange()">
+              <option value="month">This month</option>
+              <option value="week">This week</option>
+              <option value="today">Today</option>
+              <option value="quarter">This quarter</option>
+              <option value="year">This year</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label for="backupFrom">From</label>
+            <input type="date" id="backupFrom">
+          </div>
+          <div>
+            <label for="backupTo">To</label>
+            <input type="date" id="backupTo">
+          </div>
+        </div>
+        <button class="secondary" onclick="exportBackupRangeFile()">Download range backup (JSON)</button>
+        <div class="small">Entries filtered by date; all gigs included so taxes still work.</div>
+
+        <hr style="border-color:var(--border);margin:10px 0;">
+
+        <h3 style="margin:4px 0 4px;font-size:14px;">Import backup</h3>
+        <input type="file" id="backupFile" accept="application/json" onchange="importBackupFile(this)">
+        <div class="small">
+          Choose a previously exported JSON file. It will restore gigs + entries.<br>
+          You can keep current data or replace it when prompted.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav no-print">
+    <div class="nav-btn active" data-page="dashboard" onclick="switchPage('dashboard', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M7 4h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm6 10h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Zm-6 0h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2Zm6-10h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-btn" data-page="gigs" onclick="switchPage('gigs', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M7 7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v2h1a1 1 0 0 1 1 1v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a1 1 0 0 1 1-1h1V7Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M9 7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2H9V7Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Gigs</span>
+    </div>
+    <div class="nav-btn" data-page="earnings" onclick="switchPage('earnings', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M6 15.5 10 11l3 3 5-6.5" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Earnings</span>
+    </div>
+    <div class="nav-btn" data-page="expenses" onclick="switchPage('expenses', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M8 9h8M8 13h5" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Expenses</span>
+    </div>
+    <div class="nav-btn" data-page="savings" onclick="switchPage('savings', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M7 10a5 5 0 0 1 10 0v1h1.5a1.5 1.5 0 0 1 1.5 1.5V15a3 3 0 0 1-3 3h-1v1.5a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 19.5V18H7a3 3 0 0 1-3-3v-2.5A1.5 1.5 0 0 1 5.5 11H7v-1Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+        <circle cx="15.5" cy="9" r="0.9" fill="#9ca3af"/>
+      </svg>
+      <span>Savings</span>
+    </div>
+    <div class="nav-btn" data-page="ledger" onclick="switchPage('ledger', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M7 6h10M7 10h10M7 14h6M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Ledger</span>
+    </div>
+    <div class="nav-btn" data-page="settings" onclick="switchPage('settings', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" stroke="#9ca3af" stroke-width="1.6"/>
+        <path d="M5.5 10.5 4 9l2-3.5 2 .5a6.5 6.5 0 0 1 2-1.2L10 3h4l-.5 1.8a6.5 6.5 0 0 1 2 1.2l2-.5L20 9l-1.5 1.5a6.5 6.5 0 0 1 0 2L20 14l-2 3.5-2-.5a6.5 6.5 0 0 1-2 1.2L14 21h-4l.5-1.8a6.5 6.5 0 0 1-2-1.2l-2 .5L4 14l1.5-1.5a6.5 6.5 0 0 1 0-2Z" stroke="#9ca3af" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Settings</span>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_GIGS = "tracktax_gigs_v8";
+    const STORAGE_ENTRIES = "tracktax_entries_v8";
+    const STORAGE_THEME = "tracktax_theme_v1";
+    const STORAGE_COLOR = "tracktax_color_v1";
+
+    let gigs = JSON.parse(localStorage.getItem(STORAGE_GIGS) || "[]");
+    let entries = JSON.parse(localStorage.getItem(STORAGE_ENTRIES) || "[]");
+
+    let taxPieChart = null;
+    let incomeBarChart = null;
+    let walletLineChart = null;
+
+    function todayISO() { return new Date().toISOString().slice(0,10); }
+    function startOfWeek() {
+      const d = new Date();
+      const day = d.getDay() || 7;
+      d.setDate(d.getDate() - day + 1);
+      return d.toISOString().slice(0,10);
+    }
+    function startOfMonth() {
+      const d = new Date();
+      d.setDate(1);
+      return d.toISOString().slice(0,10);
+    }
+    function startOfQuarter() {
+      const d = new Date();
+      const m = d.getMonth();
+      const qStart = m - (m % 3);
+      d.setMonth(qStart, 1);
+      return d.toISOString().slice(0,10);
+    }
+    function startOfYear() {
+      const d = new Date();
+      d.setMonth(0,1);
+      return d.toISOString().slice(0,10);
+    }
+
+    function saveGigs() { localStorage.setItem(STORAGE_GIGS, JSON.stringify(gigs)); }
+    function saveEntries() { localStorage.setItem(STORAGE_ENTRIES, JSON.stringify(entries)); }
+
+    function formatMoney(v) { return "€" + (Number(v)||0).toFixed(2); }
+
+    function switchPage(page, el) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById("page-" + page).classList.add("active");
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      el.classList.add("active");
+      renderAll();
+    }
+
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      if (theme === "light") root.classList.add("light");
+      else root.classList.remove("light");
+      document.getElementById("themeSelect").value = theme;
+    }
+
+    function applyColorTheme(color) {
+      const root = document.documentElement;
+      root.classList.remove("theme-green", "theme-blue", "theme-purple", "theme-orange");
+      root.classList.add("theme-" + color);
+      document.getElementById("colorSelect").value = color;
+    }
+
+    function changeTheme() {
+      const theme = document.getElementById("themeSelect").value;
+      localStorage.setItem(STORAGE_THEME, theme);
+      applyTheme(theme);
+    }
+
+    function changeColorTheme() {
+      const color = document.getElementById("colorSelect").value;
+      localStorage.setItem(STORAGE_COLOR, color);
+      applyColorTheme(color);
+    }
+
+    function resetGigForm() {
+      document.getElementById("gigEditId").value = "";
+      document.getElementById("gigName").value = "";
+      document.getElementById("gigTaxesContainer").innerHTML = "";
+    }
+
+    function addGigTaxRow(taxObj) {
+      const container = document.getElementById("gigTaxesContainer");
+      const div = document.createElement("div");
+      div.style.marginTop = "6px";
+      div.innerHTML = `
+        <div class="row">
+          <div>
+            <label>Tax name</label>
+            <input class="gig-tax-name" placeholder="IVA, IRS, SS" value="${taxObj?.name || ""}">
+          </div>
+          <div>
+            <label>%</label>
+            <input class="gig-tax-rate" type="number" step="0.01" value="${taxObj?.rate || ""}">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Included or excluded</label>
+            <select class="gig-tax-included">
+              <option value="true" ${taxObj?.included !== false ? "selected" : ""}>Included</option>
+              <option value="false" ${taxObj?.included === false ? "selected" : ""}>Excluded</option>
+            </select>
+          </div>
+          <div>
+            <label>Order (display only)</label>
+            <input class="gig-tax-order" type="number" step="1" value="${taxObj?.order || ""}">
+          </div>
+        </div>
+        <button class="secondary" style="margin-top:4px;" onclick="this.parentElement.remove()">Remove tax</button>
+        <hr style="border-color:#1f2937;margin-top:8px;">
+      `;
+      container.appendChild(div);
+    }
+
+    function saveGig() {
+      const id = document.getElementById("gigEditId").value;
+      const name = document.getElementById("gigName").value.trim();
+      if (!name) { alert("Gig name required"); return; }
+
+      const taxRows = document.querySelectorAll("#gigTaxesContainer > div");
+      const taxes = [];
+      taxRows.forEach(row => {
+        const nameEl = row.querySelector(".gig-tax-name");
+        const rateEl = row.querySelector(".gig-tax-rate");
+        const incEl = row.querySelector(".gig-tax-included");
+        const ordEl = row.querySelector(".gig-tax-order");
+        const tname = nameEl.value.trim();
+        const trate = Number(rateEl.value);
+        if (!tname || !trate) return;
+        taxes.push({
+          name: tname,
+          rate: trate / 100,
+          included: incEl.value === "true",
+          order: ordEl.value ? Number(ordEl.value) : null
+        });
+      });
+
+      if (id) {
+        if (!confirm("Updating this gig will recalculate all its earnings with new taxes. Continue?")) return;
+        const idx = gigs.findIndex(g => g.id === Number(id));
+        if (idx !== -1) gigs[idx] = { ...gigs[idx], name, taxes };
+      } else {
+        gigs.push({ id: Date.now(), name, taxes });
+      }
+      saveGigs();
+      resetGigForm();
+      renderAll();
+    }
+
+    function editGig(id) {
+      const g = gigs.find(x => x.id === id);
+      if (!g) return;
+      document.getElementById("gigEditId").value = g.id;
+      document.getElementById("gigName").value = g.name;
+      const container = document.getElementById("gigTaxesContainer");
+      container.innerHTML = "";
+      (g.taxes || []).forEach(t => addGigTaxRow({
+        name: t.name,
+        rate: t.rate * 100,
+        included: t.included,
+        order: t.order
+      }));
+    }
+
+    function deleteGig(id) {
+      if (!confirm("Delete this gig? Existing entries keep only the gig name text.")) return;
+      const g = gigs.find(x => x.id === id);
+      gigs = gigs.filter(g => g.id !== id);
+      saveGigs();
+      entries = entries.map(e => {
+        if (e.type === "income" && e.gigId === id) {
+          return { ...e, gigId: null, gigName: g ? g.name : (e.gigName || "Old gig") };
+        }
+        return e;
+      });
+      saveEntries();
+      renderAll();
+    }
+
+    function renderGigs() {
+      const list = document.getElementById("gigList");
+      list.innerHTML = "";
+      if (!gigs.length) {
+        list.innerHTML = `<div class="small">No gigs yet. Add Uber, Glovo, etc.</div>`;
+        return;
+      }
+      gigs.forEach(g => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        const taxesText = (g.taxes || [])
+          .sort((a,b) => (a.order||0)-(b.order||0))
+          .map(t => `${t.name} ${(t.rate*100).toFixed(2)}% ${t.included ? "(included)" : "(excluded)"}`)
+          .join(" | ");
+        div.innerHTML = `
+          <div class="entry-header">
+            <div><b>${g.name}</b></div>
+          </div>
+          <div class="small">${taxesText || "No taxes configured"}</div>
+          <div class="entry-actions">
+            <button class="secondary" onclick="editGig(${g.id})">Edit</button>
+            <button class="danger" onclick="deleteGig(${g.id})">Delete</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderGigSelect() {
+      const sel = document.getElementById("earnGig");
+      sel.innerHTML = "";
+      if (!gigs.length) {
+        sel.innerHTML = `<option value="">No gigs yet</option>`;
+        return;
+      }
+      gigs.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = g.name;
+        sel.appendChild(opt);
+      });
+    }
+
+    function computeIncome(entry) {
+      const amount = Number(entry.amount) || 0;
+      const gig = gigs.find(g => g.id === entry.gigId);
+      if (!gig || !gig.taxes || !gig.taxes.length) {
+        return { net: amount, taxes: [] };
+      }
+      const taxes = (gig.taxes || []).slice().sort((a,b) => (a.order||0)-(b.order||0));
+      let includedTotal = 0;
+      const resultTaxes = [];
+      taxes.forEach(t => {
+        let taxAmount = 0;
+        let baseUsed = amount;
+        if (t.included) {
+          const baseWithoutTax = amount / (1 + t.rate);
+          taxAmount = amount - baseWithoutTax;
+          includedTotal += taxAmount;
+        } else {
+          taxAmount = amount * t.rate;
+        }
+        resultTaxes.push({
+          name: t.name,
+          rate: t.rate,
+          amount: taxAmount,
+          baseUsed,
+          included: t.included
+        });
+      });
+      const net = amount - includedTotal;
+      return { net, taxes: resultTaxes };
+    }
+
+    function resetEarningForm() {
+      document.getElementById("earnEditId").value = "";
+      document.getElementById("earnDate").value = todayISO();
+      if (gigs[0]) document.getElementById("earnGig").value = gigs[0].id;
+      document.getElementById("earnAmount").value = "";
+      document.getElementById("earnNote").value = "";
+      document.getElementById("earnSaveBtn").textContent = "Save earning";
+    }
+
+    function saveEarning() {
+      const id = document.getElementById("earnEditId").value;
+      const date = document.getElementById("earnDate").value || todayISO();
+      const gigId = Number(document.getElementById("earnGig").value);
+      const amount = Number(document.getElementById("earnAmount").value);
+      const note = document.getElementById("earnNote").value.trim();
+      if (!gigId) { alert("Select a gig"); return; }
+      if (!amount || isNaN(amount)) { alert("Amount required"); return; }
+      const gig = gigs.find(g => g.id === gigId);
+      const entryObj = {
+        id: id ? Number(id) : Date.now(),
+        date,
+        type: "income",
+        gigId,
+        gigName: gig ? gig.name : "",
+        amount,
+        note
+      };
+      if (id) {
+        const idx = entries.findIndex(e => e.id === Number(id));
+        if (idx !== -1) entries[idx] = entryObj;
+      } else {
+        entries.push(entryObj);
+      }
+      saveEntries();
+      resetEarningForm();
+      renderAll();
+    }
+
+    function editEarning(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      document.getElementById("earnEditId").value = e.id;
+      document.getElementById("earnDate").value = e.date;
+      document.getElementById("earnGig").value = e.gigId || "";
+      document.getElementById("earnAmount").value = e.amount;
+      document.getElementById("earnNote").value = e.note || "";
+      document.getElementById("earnSaveBtn").textContent = "Update earning";
+      switchPage("earnings", document.querySelector('[data-page="earnings"]'));
+    }
+
+    function renderEarnings() {
+      const from = document.getElementById("earnFrom").value || "0000-01-01";
+      const to = document.getElementById("earnTo").value || "9999-12-31";
+      const list = document.getElementById("earnList");
+      list.innerHTML = "";
+      entries
+        .filter(e => e.type === "income" && e.date >= from && e.date <= to)
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          const calc = computeIncome(e);
+          const div = document.createElement("div");
+          div.className = "entry";
+          const taxLines = (calc.taxes || []).map(t =>
+            `${t.name} ${(t.rate*100).toFixed(2)}%: ${formatMoney(t.amount)} (base ${formatMoney(t.baseUsed)}) ${t.included ? "[included]" : "[excluded]"}`
+          ).join("<br>");
+          div.innerHTML = `
+            <div class="entry-header">
+              <div>
+                <span class="badge badge-income">${e.gigName || "Gig"}</span>
+                <b>${formatMoney(e.amount)}</b> → <b>${formatMoney(calc.net)}</b>
+              </div>
+              <div class="small">${e.date || ""}</div>
+            </div>
+            <div class="small">${taxLines || "No taxes"}</div>
+            <div class="small">${e.note ? e.note.replace(/</g,"&lt;") : ""}</div>
+            <div class="entry-actions">
+              <button class="secondary" onclick="editEarning(${e.id})">Edit</button>
+              <button class="danger" onclick="deleteEntry(${e.id})">Delete</button>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+    }
+
+    function resetExpenseForm() {
+      document.getElementById("expEditId").value = "";
+      document.getElementById("expDate").value = todayISO();
+      document.getElementById("expCat").value = "";
+      document.getElementById("expAmount").value = "";
+      document.getElementById("expNote").value = "";
+      document.getElementById("expSaveBtn").textContent = "Save expense";
+    }
+
+    function saveExpense() {
+      const id = document.getElementById("expEditId").value;
+      const date = document.getElementById("expDate").value || todayISO();
+      const cat = document.getElementById("expCat").value.trim() || "Expense";
+      const amount = Number(document.getElementById("expAmount").value);
+      const note = document.getElementById("expNote").value.trim();
+      if (!amount || isNaN(amount)) { alert("Amount required"); return; }
+      const entryObj = {
+        id: id ? Number(id) : Date.now(),
+        date,
+        type: "expense",
+        category: cat,
+        amount,
+        note
+      };
+      if (id) {
+        const idx = entries.findIndex(e => e.id === Number(id));
+        if (idx !== -1) entries[idx] = entryObj;
+      } else {
+        entries.push(entryObj);
+      }
+      saveEntries();
+      resetExpenseForm();
+      renderAll();
+    }
+
+    function editExpense(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      document.getElementById("expEditId").value = e.id;
+      document.getElementById("expDate").value = e.date;
+      document.getElementById("expCat").value = e.category;
+      document.getElementById("expAmount").value = e.amount;
+      document.getElementById("expNote").value = e.note || "";
+      document.getElementById("expSaveBtn").textContent = "Update expense";
+      switchPage("expenses", document.querySelector('[data-page="expenses"]'));
+    }
+
+    function renderExpenses() {
+      const from = document.getElementById("expFrom").value || "0000-01-01";
+      const to = document.getElementById("expTo").value || "9999-12-31";
+      const list = document.getElementById("expList");
+      list.innerHTML = "";
+      entries
+        .filter(e => e.type === "expense" && e.date >= from && e.date <= to)
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <div class="entry-header">
+              <div>
+                <span class="badge badge-expense">${e.category}</span>
+                <b>${formatMoney(e.amount)}</b>
+              </div>
+              <div class="small">${e.date || ""}</div>
+            </div>
+            <div class="small">${e.note ? e.note.replace(/</g,"&lt;") : ""}</div>
+            <div class="entry-actions">
+              <button class="secondary" onclick="editExpense(${e.id})">Edit</button>
+              <button class="danger" onclick="deleteEntry(${e.id})">Delete</button>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+    }
+
+    function resetSavingForm() {
+      document.getElementById("savEditId").value = "";
+      document.getElementById("savDate").value = todayISO();
+      document.getElementById("savAmount").value = "";
+      document.getElementById("savNote").value = "";
+      document.getElementById("savSaveBtn").textContent = "Save saving";
+    }
+
+    function saveSaving() {
+      const id = document.getElementById("savEditId").value;
+      const date = document.getElementById("savDate").value || todayISO();
+      const amount = Number(document.getElementById("savAmount").value);
+      const note = document.getElementById("savNote").value.trim();
+      if (!amount || isNaN(amount)) { alert("Amount required"); return; }
+      const entryObj = {
+        id: id ? Number(id) : Date.now(),
+        date,
+        type: "saving",
+        amount,
+        note
+      };
+      if (id) {
+        const idx = entries.findIndex(e => e.id === Number(id));
+        if (idx !== -1) entries[idx] = entryObj;
+      } else {
+        entries.push(entryObj);
+      }
+      saveEntries();
+      resetSavingForm();
+      renderAll();
+    }
+
+    function editSaving(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      document.getElementById("savEditId").value = e.id;
+      document.getElementById("savDate").value = e.date;
+      document.getElementById("savAmount").value = e.amount;
+      document.getElementById("savNote").value = e.note || "";
+      document.getElementById("savSaveBtn").textContent = "Update saving";
+      switchPage("savings", document.querySelector('[data-page="savings"]'));
+    }
+
+    function renderSavings() {
+      const from = document.getElementById("savFrom").value || "0000-01-01";
+      const to = document.getElementById("savTo").value || "9999-12-31";
+      const list = document.getElementById("savList");
+      list.innerHTML = "";
+      entries
+        .filter(e => e.type === "saving" && e.date >= from && e.date <= to)
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <div class="entry-header">
+              <div>
+                <span class="badge badge-saving">Saving</span>
+                <b>${formatMoney(e.amount)}</b>
+              </div>
+              <div class="small">${e.date || ""}</div>
+            </div>
+            <div class="small">${e.note ? e.note.replace(/</g,"&lt;") : ""}</div>
+            <div class="entry-actions">
+              <button class="secondary" onclick="editSaving(${e.id})">Edit</button>
+              <button class="danger" onclick="deleteEntry(${e.id})">Delete</button>
+            </div>
+          `;
+          list.appendChild(div);
+        });
+    }
+
+    function deleteEntry(id) {
+      if (!confirm("Delete this entry?")) return;
+      entries = entries.filter(e => e.id !== id);
+      saveEntries();
+      renderAll();
+    }
+
+    function onDashboardRangeChange() {
+      const mode = document.getElementById("dashRange").value;
+      const fromEl = document.getElementById("dashFrom");
+      const toEl = document.getElementById("dashTo");
+      const today = todayISO();
+      if (mode === "today") {
+        fromEl.value = today;
+        toEl.value = today;
+      } else if (mode === "week") {
+        fromEl.value = startOfWeek();
+        toEl.value = today;
+      } else if (mode === "month") {
+        fromEl.value = startOfMonth();
+        toEl.value = today;
+      } else if (mode === "quarter") {
+        fromEl.value = startOfQuarter();
+        toEl.value = today;
+      } else if (mode === "year") {
+        fromEl.value = startOfYear();
+        toEl.value = today;
+      }
+      renderDashboard();
+    }
+
+    function renderDashboard() {
+      const from = document.getElementById("dashFrom").value || "0000-01-01";
+      const to = document.getElementById("dashTo").value || "9999-12-31";
+
+      let gross = 0, exp = 0, netIncome = 0, savingTotal = 0;
+      let ivaTotal = 0, irsTotal = 0, ssTotal = 0, otherTaxTotal = 0;
+      let runningWallet = 0;
+
+      const filtered = entries
+        .filter(e => e.date >= from && e.date <= to)
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""));
+
+      filtered.forEach(e => {
+        if (e.type === "income") {
+          gross += Number(e.amount) || 0;
+          const calc = computeIncome(e);
+          netIncome += calc.net || 0;
+          (calc.taxes || []).forEach(t => {
+            const name = t.name.toUpperCase();
+            if (name === "IVA") ivaTotal += t.amount;
+            else if (name === "IRS") irsTotal += t.amount;
+            else if (name === "SS" || name === "SEGURANCA" || name === "SEGURANÇA") ssTotal += t.amount;
+            else otherTaxTotal += t.amount;
+          });
+        } else if (e.type === "expense") {
+          exp += Number(e.amount) || 0;
+        } else if (e.type === "saving") {
+          savingTotal += Number(e.amount) || 0;
+        }
+      });
+
+      const walletBefore = netIncome - exp;
+      const walletAfter = walletBefore - savingTotal;
+
+      document.getElementById("dashIncome").textContent = formatMoney(gross);
+      document.getElementById("dashNet").textContent = formatMoney(netIncome);
+      document.getElementById("dashExpense").textContent = formatMoney(exp);
+      document.getElementById("dashSaving").textContent = formatMoney(savingTotal);
+      document.getElementById("dashIVA").textContent = formatMoney(ivaTotal);
+      document.getElementById("dashIRS").textContent = formatMoney(irsTotal);
+      document.getElementById("dashSS").textContent = formatMoney(ssTotal);
+      document.getElementById("dashOtherTax").textContent = formatMoney(otherTaxTotal);
+      document.getElementById("dashWalletBefore").textContent = formatMoney(walletBefore);
+      document.getElementById("dashWalletAfter").textContent = formatMoney(walletAfter);
+      document.getElementById("dashDetail").textContent =
+        `Entries: ${filtered.length} (Wallet = Net income - expenses - savings)`;
+
+      const labels = [];
+      const walletData = [];
+      runningWallet = 0;
+      filtered.forEach(e => {
+        if (e.type === "income") {
+          const calc = computeIncome(e);
+          runningWallet += calc.net || 0;
+        } else if (e.type === "expense") {
+          runningWallet -= Number(e.amount) || 0;
+        } else if (e.type === "saving") {
+          runningWallet -= Number(e.amount) || 0;
+        }
+        labels.push(e.date);
+        walletData.push(runningWallet);
+      });
+
+      const taxCtx = document.getElementById("taxPie").getContext("2d");
+      if (taxPieChart) taxPieChart.destroy();
+      const taxData = [ivaTotal, irsTotal, ssTotal, otherTaxTotal];
+      const taxLabels = ["IVA", "IRS", "SS", "Other"];
+      taxPieChart = new Chart(taxCtx, {
+        type: "pie",
+        data: {
+          labels: taxLabels,
+          datasets: [{
+            data: taxData,
+            backgroundColor: ["#22c55e", "#f97316", "#3b82f6", "#a855f7"]
+          }]
+        },
+        options: {
+          plugins: { legend: { position: "bottom" } }
+        }
+      });
+
+      const incCtx = document.getElementById("incomeBar").getContext("2d");
+      if (incomeBarChart) incomeBarChart.destroy();
+      incomeBarChart = new Chart(incCtx, {
+        type: "bar",
+        data: {
+          labels: ["Income", "Expenses"],
+          datasets: [{
+            data: [netIncome, exp],
+            backgroundColor: ["#22c55e", "#ef4444"]
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      const walCtx = document.getElementById("walletLine").getContext("2d");
+      if (walletLineChart) walletLineChart.destroy();
+      walletLineChart = new Chart(walCtx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Wallet",
+            data: walletData,
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34,197,94,0.15)",
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+
+    function renderLedger() {
+      const from = document.getElementById("ledFrom").value || "0000-01-01";
+      const to = document.getElementById("ledTo").value || "9999-12-31";
+      const type = document.getElementById("ledType").value;
+      const list = document.getElementById("ledgerList");
+      list.innerHTML = "";
+
+      entries
+        .filter(e => e.date >= from && e.date <= to && (!type || e.type === type))
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          const div = document.createElement("div");
+          div.className = "entry";
+          let main = "";
+          let badgeClass = "";
+          if (e.type === "income") {
+            const calc = computeIncome(e);
+            main = `${e.gigName || "Gig"} ${formatMoney(e.amount)} → ${formatMoney(calc.net)}`;
+            badgeClass = "badge-income";
+          } else if (e.type === "expense") {
+            main = `${e.category || "Expense"} ${formatMoney(e.amount)}`;
+            badgeClass = "badge-expense";
+          } else {
+            main = `Saving ${formatMoney(e.amount)}`;
+            badgeClass = "badge-saving";
+          }
+          div.innerHTML = `
+            <div class="entry-header">
+              <div>
+                <span class="badge ${badgeClass}">${e.type}</span>
+                <b>${main}</b>
+              </div>
+              <div class="small">${e.date || ""}</div>
+            </div>
+            <div class="small">${e.note ? e.note.replace(/</g,"&lt;") : ""}</div>
+          `;
+          list.appendChild(div);
+        });
+    }
+
+    function exportLedgerCSVFile() {
+      if (!entries.length) {
+        alert("No entries to export.");
+        return;
+      }
+
+      const rows = [];
+      rows.push(["Date", "Type", "Name", "Amount", "Net", "Taxes"]);
+
+      entries
+        .slice()
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          let type = e.type;
+          let name = "";
+          let amount = "";
+          let net = "";
+          let taxesStr = "";
+
+          if (e.type === "income") {
+            const calc = computeIncome(e);
+            name = e.gigName || "Gig";
+            amount = (Number(e.amount)||0).toFixed(2);
+            net = (calc.net||0).toFixed(2);
+            const taxParts = (calc.taxes || []).map(t => {
+              const inEx = t.included ? "in" : "ex";
+              return `${t.name}:${t.amount.toFixed(2)}[${inEx}]`;
+            });
+            taxesStr = taxParts.join(" | ");
+          } else if (e.type === "expense") {
+            name = e.category || "Expense";
+            amount = (Number(e.amount)||0).toFixed(2);
+            net = "";
+            taxesStr = "";
+          } else {
+            name = "Saving";
+            amount = (Number(e.amount)||0).toFixed(2);
+            net = "";
+            taxesStr = "";
+          }
+
+          rows.push([
+            e.date || "",
+            type,
+            name,
+            amount,
+            net,
+            taxesStr
+          ]);
+        });
+
+      const csv = rows.map(r =>
+        r.map(text => {
+          let t = String(text);
+          if (t.includes('"') || t.includes(",") || t.includes(";") || t.includes("\n")) {
+            t = '"' + t.replace(/"/g, '""') + '"';
+          }
+          return t;
+        }).join(",")
+      ).join("\n");
+
+      const filename = "tracktax-detailed-" + todayISO() + ".csv";
+      const uri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+      const a = document.createElement("a");
+      a.href = uri;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function exportPDF() {
+      if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert("PDF library not loaded.");
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(16);
+      doc.text("TrackTax Wallet Export", 14, 16);
+
+      const dashRows = [
+        ["Gross income", document.getElementById("dashIncome").textContent],
+        ["Net income", document.getElementById("dashNet").textContent],
+        ["Expenses", document.getElementById("dashExpense").textContent],
+        ["Savings", document.getElementById("dashSaving").textContent],
+        ["Total IVA", document.getElementById("dashIVA").textContent],
+        ["Total IRS", document.getElementById("dashIRS").textContent],
+        ["Total SS", document.getElementById("dashSS").textContent],
+        ["Other taxes", document.getElementById("dashOtherTax").textContent],
+        ["Wallet before saving", document.getElementById("dashWalletBefore").textContent],
+        ["Wallet after saving", document.getElementById("dashWalletAfter").textContent]
+      ];
+
+      doc.setFontSize(12);
+      doc.text("Dashboard summary", 14, 26);
+      doc.autoTable({
+        startY: 30,
+        head: [["Metric", "Value"]],
+        body: dashRows,
+        styles: { fontSize: 9 }
+      });
+
+      const incomeRows = [];
+      entries
+        .filter(e => e.type === "income")
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          const calc = computeIncome(e);
+          (calc.taxes || []).forEach(t => {
+            incomeRows.push([
+              e.date || "",
+              e.gigName || "Gig",
+              (Number(e.amount)||0).toFixed(2),
+              (calc.net||0).toFixed(2),
+              t.name,
+              (t.rate*100).toFixed(2),
+              t.amount.toFixed(2),
+              t.included ? "In" : "Ex"
+            ]);
+          });
+        });
+
+      if (incomeRows.length) {
+        doc.addPage();
+        doc.text("Income", 14, 16);
+        doc.autoTable({
+          startY: 20,
+          head: [["Date", "Gig", "Amount", "Net", "Tax", "%", "Tax", "In/Ex"]],
+          body: incomeRows,
+          styles: { fontSize: 8 }
+        });
+      }
+
+      const expenseRows = [];
+      entries
+        .filter(e => e.type === "expense")
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          expenseRows.push([
+            e.date || "",
+            e.category || "Expense",
+            (Number(e.amount)||0).toFixed(2),
+            (e.note || "").replace(/\r?\n|\r/g, " ")
+          ]);
+        });
+
+      const savingRows = [];
+      entries
+        .filter(e => e.type === "saving")
+        .sort((a,b) => (a.date||"").localeCompare(b.date||""))
+        .forEach(e => {
+          savingRows.push([
+            e.date || "",
+            (Number(e.amount)||0).toFixed(2),
+            (e.note || "").replace(/\r?\n|\r/g, " ")
+          ]);
+        });
+
+      if (expenseRows.length || savingRows.length) {
+        doc.addPage();
+        let y = 16;
+
+        if (expenseRows.length) {
+          doc.text("Expenses", 14, y);
+          doc.autoTable({
+            startY: y + 4,
+            head: [["Date", "Category", "Amount", "Note"]],
+            body: expenseRows,
+            styles: { fontSize: 8 }
+          });
+          y = doc.lastAutoTable.finalY + 8;
+        }
+
+        if (savingRows.length) {
+          doc.text("Savings", 14, y);
+          doc.autoTable({
+            startY: y + 4,
+            head: [["Date", "Amount", "Note"]],
+            body: savingRows,
+            styles: { fontSize: 8 }
+          });
+        }
+      }
+
+      const filename = "tracktax-report-" + todayISO() + ".pdf";
+      doc.save(filename);
+    }
+
+    function onBackupRangeChange() {
+      const mode = document.getElementById("backupRange").value;
+      const fromEl = document.getElementById("backupFrom");
+      const toEl = document.getElementById("backupTo");
+      const today = todayISO();
+      if (mode === "today") {
+        fromEl.value = today;
+        toEl.value = today;
+      } else if (mode === "week") {
+        fromEl.value = startOfWeek();
+        toEl.value = today;
+      } else if (mode === "month") {
+        fromEl.value = startOfMonth();
+        toEl.value = today;
+      } else if (mode === "quarter") {
+        fromEl.value = startOfQuarter();
+        toEl.value = today;
+      } else if (mode === "year") {
+        fromEl.value = startOfYear();
+        toEl.value = today;
+      }
+    }
+
+    function exportBackupFullFile() {
+      const payload = { gigs, entries };
+      const json = JSON.stringify(payload, null, 2);
+      const filename = "tracktax-backup-full-" + todayISO() + ".json";
+      const uri = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+      const a = document.createElement("a");
+      a.href = uri;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function exportBackupRangeFile() {
+      const from = document.getElementById("backupFrom").value || "0000-01-01";
+      const to = document.getElementById("backupTo").value || "9999-12-31";
+      const filteredEntries = entries.filter(e => e.date >= from && e.date <= to);
+      const payload = { gigs, entries: filteredEntries };
+      const json = JSON.stringify(payload, null, 2);
+      const filename = "tracktax-backup-range-" + todayISO() + ".json";
+      const uri = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+      const a = document.createElement("a");
+      a.href = uri;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function importBackupFile(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.entries) || !Array.isArray(data.gigs)) {
+            alert("JSON must contain { gigs: [...], entries: [...] }");
+            return;
+          }
+          const replace = confirm("OK = Replace current data. Cancel = Merge with current data.");
+          if (replace) {
+            gigs = data.gigs;
+            entries = data.entries;
+          } else {
+            const gigIds = new Set(gigs.map(g => g.id));
+            data.gigs.forEach(g => { if (!gigIds.has(g.id)) gigs.push(g); });
+            const entryIds = new Set(entries.map(e => e.id));
+            data.entries.forEach(e => { if (!entryIds.has(e.id)) entries.push(e); });
+          }
+          saveGigs();
+          saveEntries();
+          renderAll();
+          alert("Backup imported.");
+        } catch (err) {
+          alert("Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function renderAll() {
+      renderGigs();
+      renderGigSelect();
+      renderEarnings();
+      renderExpenses();
+      renderSavings();
+      renderLedger();
+      renderDashboard();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const theme = localStorage.getItem(STORAGE_THEME) || "dark";
+      const color = localStorage.getItem(STORAGE_COLOR) || "green";
+      applyTheme(theme);
+      applyColorTheme(color);
+
+      document.getElementById("dashRange").value = "month";
+      onDashboardRangeChange();
+
+      resetGigForm();
+      resetEarningForm();
+      resetExpenseForm();
+      resetSavingForm();
+
+      renderAll();
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js").catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>
